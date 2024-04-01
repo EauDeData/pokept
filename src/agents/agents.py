@@ -122,6 +122,8 @@ if __name__ == '__main__':
                 max_damage_player.n_won_battles, time.time() - start
             )
         )
+        return True
 
 
-    asyncio.get_event_loop().run_until_complete(main())
+    print(asyncio.get_event_loop().run_until_complete(main()))
+
