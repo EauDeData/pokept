@@ -87,7 +87,7 @@ async def run_match():
 
     player1_wins, player2_wins = await simulate_gen8_random_battle(
         {'file_name': agent1_filename.replace('.py', ''), 'agent_name': agent1_name},
-        {'file_name': agent2_filename.replace('.py', ''), 'agent_name': agent2_name}, nbattles=10)
+        {'file_name': agent2_filename.replace('.py', ''), 'agent_name': agent2_name}, nbattles=50)
 
     data = {'nwins_player1': player1_wins,
                     'nwins_player2': player2_wins,
