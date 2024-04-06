@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Agent</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Upload Agent</h1>
+        <form action="/upload_agent" method="post" enctype="multipart/form-data">
+            <div>
+                <label for="agent_name">Agent Name:</label>
+                <input type="text" id="agent_name" name="agent_name">
+            </div>
+            <div>
+                <label for="file">Upload Agent File:</label>
+                <input type="file" id="file" name="file">
+            </div>
+            <div>
+                <button type="submit">Upload</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

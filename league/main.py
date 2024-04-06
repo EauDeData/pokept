@@ -13,7 +13,7 @@ import sqlite3
 import numpy as np
 
 db_name = 'db/databasev2.db'
-app = Flask(__name__, template_folder='front')
+app = Flask(__name__, template_folder='front/html', static_url_path='/static', static_folder='front/static/')
 app.config['UPLOAD_FOLDER'] = 'sim/agents/'
 app.config['DATABASE'] = db_name
 
@@ -137,8 +137,7 @@ def get_matches():
         ax.set_title('Agent Wins Heatmap')
 
         # Rotate the tick labels
-        plt.xticks(rotation=45)
-        plt.yticks(rotation=45)
+        #plt.yticks(rotation=90)
         ax.set_xlabel('Lose Rate')
         ax.set_ylabel('Win Rate')
 
