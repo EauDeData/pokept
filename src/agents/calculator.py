@@ -88,12 +88,9 @@ def basic_calculate_damage_dealt(pkmn_dealer: Pokemon, pkmn_receiver: Pokemon, m
     min_attack, max_attack = calculate_stat(pkmn_dealer, atk_category)
     min_def, max_def = calculate_stat(pkmn_receiver, df_category)
 
-    min_attack, max_attack = (min_attack + (0.5 * min_attack) * pkmn_dealer._boosts[atk_category],
-                              max_attack + (0.5 * max_attack) * pkmn_dealer._boosts[atk_category])
+     # FIXME: Changes on stats are not being counted!!!
 
-    min_def, max_def = (min_def + (0.5 * min_def) * pkmn_receiver._boosts[df_category],
-                        max_def + (0.5 * max_def) * pkmn_receiver._boosts[df_category])
-
+    # if max_def == 0: print(pkmn_receiver.base_stats, pkmn_receiver)
     # print(min_def, max_def, pkmn_receiver._boosts[df_category], pkmn_receiver)
     min_power_factor, max_power_factor = ((attacking_level_factor * (min_attack / max_def)) / 50,
                                           (attacking_level_factor * (max_attack / min_def)) / 50)

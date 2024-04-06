@@ -7,6 +7,8 @@ import nashpy as nash
 import random
 from poke_env.environment.pokemon import Pokemon
 from poke_env.environment.move import Move
+import pandas as pd
+
 
 def _get_env_state(battle):
     # Get active Pokémon and opponent's active Pokémon
@@ -67,11 +69,12 @@ class EffectivenessOffensive(Player):
             return self.choose_random_move(battle)
 
 
-class OneStepNashEquilibrium(Player):
+class SingleStageMinMax(Player):
+    # FIXME: It is bullshit, i think the damage approximations are not working
     prev_state = None
+
     # Assume single step nash equilibrium
     # In the future we should do the tree
-
     def state_of_battle(self, battle):
 
         our_fainted_count = sum(
@@ -96,102 +99,71 @@ class OneStepNashEquilibrium(Player):
 
         self.prev_state = (our_fainted_count, opponent_fainted_count)
         return our_fainted_count, opponent_fainted_count
-
     def calculate_damage_percentage(self, dealer, receiver, move):
 
         damage_info = basic_calculate_damage_dealt(dealer, receiver, move)
         # Delulu strategy: Assumes fairness
-        total_damage = .5 * damage_info['max_pkmn']['expected_luck'] + .5 * damage_info['min_pkmn']['expected_luck']
-        damage_percentage = total_damage / (sum(calculate_stat(receiver, 'hp'))*.5)
+        total_damage = .5 * damage_info['max_pkmn']['expected_luck'] + .5 * damage_info['max_pkmn']['expected_luck']
+        damage_percentage = total_damage / (sum(calculate_stat(receiver, 'hp')) * .5)
 
         return damage_percentage
 
     def simulate_move(self, our_move, their_move, battle):
 
         # Fixme: This is not considering speed!!!
-        our_fainted_count, opponent_fainted_count = self.state_of_battle(battle)
+        # Fixme: Use state of battle + calculate_damage_percentage
         active_pokemon = battle.active_pokemon
         opponent_pokemon = battle.opponent_active_pokemon
 
         if our_move[0] == 'switch':
             active_pokemon = our_move[1]
+            opponent_fainted_count = 0
+
         if their_move[0] == 'switch':
             opponent_pokemon = their_move[1]
+            our_fainted_count = 0
 
         if our_move[0] == 'attack':
-            opponent_fainted_count = opponent_fainted_count + self.calculate_damage_percentage(active_pokemon,
-                                                                                               opponent_pokemon,
-                                                                                               our_move[1])
+            opponent_fainted_count = self.calculate_damage_percentage(active_pokemon, opponent_pokemon, our_move[1])
         if their_move[0] == 'attack':
-            our_fainted_count = our_fainted_count + self.calculate_damage_percentage(opponent_pokemon,
-                                                                                     active_pokemon,
-                                                                                     their_move[1])
-        return our_fainted_count, opponent_fainted_count
-    @staticmethod
-    def find_nash_equilibrium(payoff_matrix_our, payoff_matrix_opponent):
-        num_rows = len(payoff_matrix_our)
-        num_cols = len(payoff_matrix_our[0])
+            our_fainted_count = self.calculate_damage_percentage(opponent_pokemon, active_pokemon, their_move[1])
 
-        for i in range(num_rows):
-            for j in range(num_cols):
-                our_payoff = payoff_matrix_our[i][j]
-                opponent_payoff = payoff_matrix_opponent[i][j]
+        return opponent_fainted_count, our_fainted_count
 
-                # Check if no player can unilaterally improve payoff
-                if all(payoff_matrix_our[x][j] <= our_payoff for x in range(num_rows)) \
-                        and all(payoff_matrix_opponent[i][y] <= opponent_payoff for y in range(num_cols)):
-                    return i, j
-    def nash_grid_search(self, battle):
+    def minmax_search(self, battle):
         # A move can be a switch ("switch", switch_object)
         # Or an attack ('attack', attack_move)
         our_availible_moves = ([('attack', atck) for atck in battle.available_moves] +
                                [('switch', stch) for stch in battle.available_switches])
 
-
         opponent_availible_moves = ([('attack', Move(atck, gen=battle.opponent_active_pokemon._data.gen))
                                      for atck in battle.opponent_active_pokemon.moves] +
                                     [('switch', stch) for stch in battle.opponent_team.values()
                                      if not stch.active and not stch.fainted])
+
         if not len(opponent_availible_moves):
             return random.choice(our_availible_moves)
 
-        # Initialize the payoff matrices
-        num_our_moves = len(our_availible_moves)
-        num_opponent_moves = len(opponent_availible_moves)
-        payoff_matrix_our = np.zeros((num_our_moves, num_opponent_moves))
-        payoff_matrix_opponent = np.zeros((num_our_moves, num_opponent_moves))
-
-        # Populate the payoff matrices
+        max_our_payoff = float('-inf')
+        best_move_indices = []
         for i, our_move in enumerate(our_availible_moves):
             for j, opponent_move in enumerate(opponent_availible_moves):
-                try:
-                    our_fainted_count, opponent_fainted_count = self.simulate_move(our_move, opponent_move, battle)
-                except ZeroDivisionError:
-                    #FIXME: Sometimes they have 0 max defense and its like wtf
-                    print('Some pokemon stats are kind of corrupted or something')
-                    return random.choice(our_availible_moves)
-
-                # Calculate the income (our cost) and cost (opponent's cost)
-                income = opponent_fainted_count
-                cost = our_fainted_count
-
-                # Store the payoffs in the matrices
-                payoff_matrix_our[i, j] = cost
-                payoff_matrix_opponent[i, j] = income
-
-        # Find by dominated strategies
-        our_selected_move = self.find_nash_equilibrium(payoff_matrix_our, payoff_matrix_opponent)
-
-        if our_selected_move is None:
-            print('Warning: Nash is crashing!')
-            return random.choice(our_availible_moves)
-        else:
-            return our_availible_moves[our_selected_move[0]]
+                our_payoff, their_payoff = self.simulate_move(our_move, opponent_move, battle)
+                our_payoff -= their_payoff
+                # Update max_our_payoff and best_move_indices if our payoff is higher
+                if our_payoff > max_our_payoff:
+                    max_our_payoff = our_payoff
+                    best_move_indices = [(i, j)]
 
 
+        # Choose a move randomly among the best moves
+        chosen_move_index = random.choice(best_move_indices +
+                                          [(random.randint(0, len(our_availible_moves) - 1), None)])
+        chosen_our_move = our_availible_moves[chosen_move_index[0]]
 
+        return chosen_our_move
     def choose_move(self, battle):
-        decision = self.nash_grid_search(battle)
+        decision = self.minmax_search(battle)
         return self.create_order(decision[1])
 
 
@@ -200,16 +172,16 @@ if __name__ == '__main__':
     import time
 
     from poke_env.player import Player, RandomPlayer
-
+    from poke_env.player.baselines import SimpleHeuristicsPlayer
 
     async def main():
         start = time.time()
 
         # We create two players.
-        random_player = OneStepNashEquilibrium(
+        random_player = SingleStageMinMax(
             battle_format="gen8randombattle",
         )
-        max_damage_player = EffectivenessOffensive(
+        max_damage_player = SimpleHeuristicsPlayer(
             battle_format="gen8randombattle",
         )
 
