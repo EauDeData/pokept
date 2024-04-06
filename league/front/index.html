@@ -2,9 +2,41 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask Services</title>
+    <style>
+        .reload-button {
+            margin-bottom: 10px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 16px;
+        }
+    </style>
 </head>
 <body>
+    <h1>Flask Services</h1>
 
+    <h2>Upload Agent</h2>
+    <button class="reload-button" onclick="reloadIframe('upload_agent')">Reload</button>
+    <iframe id="upload_agent" name="/upload_agent_form" src="/upload_agent_form" width="100%" height="300px" frameborder="0"></iframe>
+
+
+    <h2>Run Match Form</h2>
+    <button class="reload-button" onclick="reloadIframe('run_match_form')">Reload</button>
+    <iframe id="run_match_form" name="/run_match_form" src="/run_match_form" width="100%" height="300px" frameborder="0"></iframe>
+
+    <h2>Results</h2>
+    <button class="reload-button" onclick="reloadIframe('get_matches')">Reload</button>
+    <iframe id="get_matches" name="/get_matches" src="/get_matches" width="100%" height="512px" frameborder="0"></iframe>
+
+    <script>
+        function reloadIframe(iframeId) {
+            var iframe = document.getElementById(iframeId);
+            iframe.src = iframe.name;
+        }
+    </script>
 </body>
 </html>
