@@ -139,6 +139,8 @@ def get_matches():
         # Rotate the tick labels
         plt.xticks(rotation=45)
         plt.yticks(rotation=45)
+        ax.set_xlabel('Lose Rate')
+        ax.set_ylabel('Win Rate')
 
         # Adjust layout to make room for tick labels
         plt.tight_layout()
